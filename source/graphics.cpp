@@ -16,6 +16,7 @@ namespace {
 
 } // namespace
 
+// предназначен для создания и управления любыми буферами (кусками памяти) на GPU
 Buffer::Buffer(size_t size, const void* data,
                VkBufferUsageFlags usage) {
 	VkDevice& device = veekay::app.vk_device;
@@ -29,6 +30,10 @@ Buffer::Buffer(size_t size, const void* data,
 			.sharingMode = VK_SHARING_MODE_EXCLUSIVE,
 		};
 
+		// На CPU создается "дескриптор" или "описатель" буфера. 
+		// Просто структура, "хочу зарезервировать в VRAM кусок памяти размером X байт,
+		// использовать его для хранения вершин (VK_BUFFER_USAGE_VERTEX_BUFFER_BIT)". 
+		// GPU еще не выделил память.
 		if (vkCreateBuffer(device, &info, nullptr, &buffer) != VK_SUCCESS) {
 			throw std::runtime_error("Failed to create Vulkan buffer");
 		}
@@ -41,9 +46,11 @@ Buffer::Buffer(size_t size, const void* data,
 		VkPhysicalDeviceMemoryProperties properties;
 		vkGetPhysicalDeviceMemoryProperties(physical_device, &properties);
 
+		// поиск типа памяти
+		// HOST_COHERENT - записи с CPU должны быть видны GPU без дополнительных команд синхронизации
 		const VkMemoryPropertyFlags flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
 		                                    VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-
+		// перебираем все доступные типы памяти
 		uint32_t index = std::numeric_limits<uint32_t>::max();
 		for (uint32_t i = 0; i < properties.memoryTypeCount; ++i) {
 			const VkMemoryType& type = properties.memoryTypes[i];
@@ -65,10 +72,12 @@ Buffer::Buffer(size_t size, const void* data,
 			.memoryTypeIndex = index,
 		};
 
+		// находим подходящий тип памяти VRAM и выделяем его
 		if (vkAllocateMemory(device, &info, nullptr, &memory) != VK_SUCCESS) {
 			throw std::runtime_error("Failed to allocate Vulkan buffer memory");
 		}
 
+		// Дескриптор буфера связывается с реальным куском выделенной VRAM. Теперь у нас есть буфер на GPU
 		if (vkBindBufferMemory(device, buffer, memory, 0) != VK_SUCCESS) {
 			throw std::runtime_error("Failed to bind Vulkan buffer memory");
 		}
@@ -99,6 +108,7 @@ size_t Buffer::structureAlignment(size_t struct_size) {
 	                     : struct_size;
 }
 
+// создание текстуры
 Texture::Texture(VkCommandBuffer cmd,
                  uint32_t width, uint32_t height,
                  VkFormat format,
@@ -110,6 +120,7 @@ Texture::Texture(VkCommandBuffer cmd,
 	uint32_t mips = 1;
 
 	if ((width & (width - 1)) == 0 && (height & (height - 1)) == 0) {
+		// расчет мип-уровней (Если размеры текстуры — степень двойки, вычисляется максимальное количество мип-уровней.)
 		mips = uint32_t(std::floor(std::log2(std::max(width, height)))) + 1;
 	}
 
@@ -127,9 +138,9 @@ Texture::Texture(VkCommandBuffer cmd,
 			.arrayLayers = 1,
 			.samples = VK_SAMPLE_COUNT_1_BIT,
 			.tiling = VK_IMAGE_TILING_OPTIMAL,
-			.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | 
-			         VK_IMAGE_USAGE_TRANSFER_DST_BIT |
-			         VK_IMAGE_USAGE_SAMPLED_BIT,
+			.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | // можно копировать ИЗ этой текстуры
+			         VK_IMAGE_USAGE_TRANSFER_DST_BIT | // можно копировать В текстуру
+			         VK_IMAGE_USAGE_SAMPLED_BIT, // текстуру можно читать из шейдера
 			.sharingMode = VK_SHARING_MODE_EXCLUSIVE,
 			.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
 		};
@@ -146,7 +157,7 @@ Texture::Texture(VkCommandBuffer cmd,
 		VkPhysicalDeviceMemoryProperties properties;
 		vkGetPhysicalDeviceMemoryProperties(physical_device, &properties);
 
-		const VkMemoryPropertyFlags flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+		const VkMemoryPropertyFlags flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT; // ищем самую быструю память
 
 		uint32_t index = std::numeric_limits<uint32_t>::max();
 		for (uint32_t i = 0; i < properties.memoryTypeCount; ++i) {
@@ -225,6 +236,7 @@ Texture::Texture(VkCommandBuffer cmd,
 			break;
 	}
 
+	// Так как CPU не может писать напрямую в DEVICE_LOCAL память, создается промежуточный (staging) буфер
 	staging = new Buffer(width * height * bytes_per_pixel,
 	                     pixels,
 	                     VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
@@ -241,6 +253,7 @@ Texture::Texture(VkCommandBuffer cmd,
 		.subresourceRange = range,
 	};
 
+	// команда, меняющая состояние изображения
 	vkCmdPipelineBarrier(cmd,
 	                     VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
 	                     VK_PIPELINE_STAGE_TRANSFER_BIT,
@@ -265,6 +278,7 @@ Texture::Texture(VkCommandBuffer cmd,
 		.imageExtent = {width, height, 1},
 	};
 
+	// Команда для GPU скопировать данные из staging буфера в наш VkImage
 	vkCmdCopyBufferToImage(cmd, staging->buffer, image,
 	                       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 	                       1, &copy_info);
@@ -285,6 +299,7 @@ Texture::Texture(VkCommandBuffer cmd,
 	int32_t mip_width = width;
 	int32_t mip_height = height;
 
+	// генерируем мип-мапы
 	for (uint32_t i = 1; i < mips; ++i) {
 		dst_to_src_to_sample.subresourceRange.baseMipLevel = i - 1;
 		dst_to_src_to_sample.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
@@ -368,7 +383,6 @@ Texture::~Texture() {
 }
 
 void init() {
-	VkDevice& device = veekay::app.vk_device;
 	VkPhysicalDevice& physical_device = veekay::app.vk_physical_device;
 
 	VkPhysicalDeviceProperties props;
