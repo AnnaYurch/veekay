@@ -622,17 +622,17 @@ namespace {
         ImGui::Text("Camera Position: (%.2f, %.2f, %.2f)", Scene::camera.position.x, Scene::camera.position.y, Scene::camera.position.z);
         ImGui::Text("Yaw: %.1f°, Pitch: %.1f°", Scene::camera.yaw, Scene::camera.pitch);
         ImGui::Separator();
-        if (ImGui::CollapsingHeader("Directional Light")) {
+        if (ImGui::CollapsingHeader("Directional")) {
             ImGui::SliderFloat3("Dir Direction", &Scene::dir_light.direction.x, -1.0f, 1.0f);
             ImGui::SliderFloat("Intensity", &Scene::dir_light.intensity, 0.0f, 10.0f);
             ImGui::ColorEdit3("Dir Ambient", &Scene::dir_light.colors.ambient.x);
             ImGui::ColorEdit3("Dir Diffuse", &Scene::dir_light.colors.diffuse.x);
             ImGui::ColorEdit3("Dir Specular", &Scene::dir_light.colors.specular.x);
         }
-        if (ImGui::CollapsingHeader("Ambient Light")) {
+        if (ImGui::CollapsingHeader("Ambient")) {
             ImGui::ColorEdit3("Ambient Color", &Scene::ambient_light.color.x);
         }
-        if (ImGui::CollapsingHeader("Spot Light 1")) {
+        if (ImGui::CollapsingHeader("Spot")) {
             SpotLight &light = Scene::spot_lights[0];
             ImGui::SliderFloat3("Spot Position", &light.position.x, -10.0f, 10.0f);
             ImGui::SliderFloat3("Spot Direction", &light.direction.x, -1.0f, 1.0f);
