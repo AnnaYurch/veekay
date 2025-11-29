@@ -405,33 +405,30 @@ union mat4 {
 		return result;
 	}
 
-	static mat4 look_at(vec3 position, vec3 target, vec3 up) {
-		vec3 z_axis = veekay::vec3::normalized(target - position); 
-		vec3 x_axis = veekay::vec3::normalized(veekay::vec3::cross(up, z_axis));
-		vec3 y_axis = veekay::vec3::cross(z_axis, x_axis);
+	static mat4 lookAt(const vec3& eye, const vec3& target, const vec3& up) {
+		vec3 z = vec3::normalized(eye - target);
+		vec3 x = vec3::normalized(vec3::cross(up, z));
+		vec3 y = vec3::cross(z, x);
 
-		mat4 result{}; 
+		mat4 result{};
+		result[0][0] = x.x;
+		result[1][0] = x.y;
+		result[2][0] = x.z;
+		result[3][0] = -vec3::dot(x, eye);
 
-		result[0][0] = x_axis.x;
-		result[0][1] = x_axis.y;
-		result[0][2] = x_axis.z;
+		result[0][1] = y.x;
+		result[1][1] = y.y;
+		result[2][1] = y.z;
+		result[3][1] = -vec3::dot(y, eye);
 
-		result[1][0] = y_axis.x;
-		result[1][1] = y_axis.y;
-		result[1][2] = y_axis.z;
+		result[0][2] = z.x;
+		result[1][2] = z.y;
+		result[2][2] = z.z;
+		result[3][2] = -vec3::dot(z, eye);
 
-		result[2][0] = -z_axis.x;
-		result[2][1] = -z_axis.y;
-		result[2][2] = -z_axis.z;
-		
-		result[3][0] = -veekay::vec3::dot(x_axis, position);
-		result[3][1] = -veekay::vec3::dot(y_axis, position);
-		result[3][2] = -veekay::vec3::dot(z_axis, position);
-		result[3][3] = 1.0f; 
-
+		result[3][3] = 1.0f;
 		return result;
 	}
-
 
 	static mat4 transpose(const mat4& matrix) {
 		mat4 result{};
