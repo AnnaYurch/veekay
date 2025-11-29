@@ -21,7 +21,7 @@ layout(std140, binding = 0) uniform SceneUniforms {
     float _pad_dir1;
     vec3 dir_specular;
     float _pad_dir2;
-    vec3 ambient_color;   // <-- только цвет
+    vec3 ambient_color;  
 } scene;
 
 layout(std140, binding = 1) uniform ModelUniforms {

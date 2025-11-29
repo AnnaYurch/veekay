@@ -19,8 +19,7 @@ layout(std140, binding = 0) uniform SceneUniforms {
     float _pad_dir1;
     vec3 dir_specular;
     float _pad_dir2;
-    vec3 amb_color; // ✅ только цвет
-    // без amb_intensity
+    vec3 amb_color; 
 } scene;
 
 layout(std140, binding = 1) uniform ModelUniforms {
@@ -55,7 +54,6 @@ layout(std430, binding = 2) readonly buffer SpotLights {
     SSBO_SpotLight spots[];
 } spotLights;
 
-// ✅ ТОЧНО КАК В we.txt: ambient = amb_color * albedo
 vec3 calc_ambient_light(vec3 albedo) {
     return scene.amb_color * albedo;
 }
@@ -99,7 +97,7 @@ void main() {
     float shininess = material.shininess;
 
     vec3 color = vec3(0.0);
-    color += calc_ambient_light(albedo); // ✅ как в we.txt
+    color += calc_ambient_light(albedo); 
     color += calc_dir_light(N, V, albedo, specular_col, shininess);
     for (uint i = 0u; i < scene.num_spot_lights; ++i) {
         color += calc_spot_light(spotLights.spots[i], N, V, P, albedo, specular_col, shininess);

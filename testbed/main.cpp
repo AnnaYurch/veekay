@@ -36,9 +36,8 @@ namespace {
         LightColors colors;
     };
 
-    // ✅ AmbientLight БЕЗ intensity — как в we.txt
     struct AmbientLight {
-        veekay::vec3 color = {0.3f, 0.3f, 0.3f}; // заметное значение по умолчанию
+        veekay::vec3 color = {0.3f, 0.3f, 0.3f}; 
     };
 
     struct alignas(16) SceneUniforms {
@@ -47,7 +46,7 @@ namespace {
         uint32_t num_spot_lights = 0;
         uint32_t _pad_align[3];
         DirectionalLight directional_light;
-        AmbientLight ambient_light; // ✅ только цвет
+        AmbientLight ambient_light;
     };
 
     struct ModelUniforms {
@@ -158,21 +157,21 @@ namespace {
             .direction = {0.047f, 0.052f, -0.306f},
             .intensity = 1.0f,
             .colors = {
-                .ambient = {0.0f, 0.0f, 0.0f},  // ← не используется в нашем ambient
+                .ambient = {0.0f, 0.0f, 0.0f},  
                 .diffuse = {1.0f, 1.0f, 0.9f},
                 .specular = {1.0f, 1.0f, 1.0f}
             }
         };
         AmbientLight ambient_light{
-            .color = {0.3f, 0.3f, 0.3f}  // ✅ как в we.txt: только цвет
+            .color = {0.3f, 0.3f, 0.3f}  
         };
         std::vector<SpotLight> spot_lights = {
             {
-                .position = {-2.0f, 2.0f, 1.5f},
+                .position = {-1.0f, 2.0f, 1.5f},
                 .colors = {
                     .ambient = {0.0f, 0.0f, 0.0f},
-                    .diffuse = {0.0f, 0.0f, 1.0f},
-                    .specular = {0.0f, 0.0f, 1.0f}
+                    .diffuse = {0.0f, 1.0f, 1.0f},
+                    .specular = {0.0f, 1.0f, 1.0f}
                 },
                 .direction = {0.0f, -1.0f, 0.0f}
             }
@@ -525,7 +524,7 @@ namespace {
             .num_spot_lights = static_cast<uint32_t>(spot_lights.size()),
             ._pad_align = {0, 0, 0},
             .directional_light = dir_light,
-            .ambient_light = ambient_light  // ✅ только цвет
+            .ambient_light = ambient_light  
         };
 
         std::vector<ModelUniforms> model_uniforms(models.size());
@@ -631,7 +630,7 @@ namespace {
             ImGui::ColorEdit3("Dir Specular", &Scene::dir_light.colors.specular.x);
         }
         if (ImGui::CollapsingHeader("Ambient Light")) {
-            ImGui::ColorEdit3("Ambient Color", &Scene::ambient_light.color.x); // ✅ без intensity
+            ImGui::ColorEdit3("Ambient Color", &Scene::ambient_light.color.x);
         }
         if (ImGui::CollapsingHeader("Spot Light 1")) {
             SpotLight &light = Scene::spot_lights[0];
