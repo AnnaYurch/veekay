@@ -231,10 +231,10 @@ namespace {
     void Renderer::createMeshes(VkCommandBuffer cmd) {
         {
             std::vector<Vertex> vertices = {
-                {{-5.0f, 0.0f, 5.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
-                {{5.0f, 0.0f, 5.0f},  {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-                {{5.0f, 0.0f, -5.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 1.0f}},
-                {{-5.0f, 0.0f, -5.0f},{0.0f, 1.0f, 0.0f}, {0.0f, 1.0f}},
+                {{-5.0f, 0.0f, 5.0f}, {0.0f, -1.0f, 0.0f}, {0.0f, 0.0f}},
+                {{5.0f, 0.0f, 5.0f},  {0.0f, -1.0f, 0.0f}, {1.0f, 0.0f}},
+                {{5.0f, 0.0f, -5.0f}, {0.0f, -1.0f, 0.0f}, {1.0f, 1.0f}},
+                {{-5.0f, 0.0f, -5.0f},{0.0f, -1.0f, 0.0f}, {0.0f, 1.0f}},
             };
             std::vector<uint32_t> indices = {0, 1, 2, 2, 3, 0};
             plane_mesh.vertex_buffer = new veekay::graphics::Buffer(
