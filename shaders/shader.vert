@@ -1,29 +1,44 @@
 #version 450
 
-layout (location = 0) in vec3 v_position;
-layout (location = 1) in vec3 v_normal;
-layout (location = 2) in vec2 v_uv;
+layout (location = 0) in vec3 in_position;
+layout (location = 1) in vec3 in_normal;
+layout (location = 2) in vec2 in_uv;
 
 layout (location = 0) out vec3 f_position;
 layout (location = 1) out vec3 f_normal;
 layout (location = 2) out vec2 f_uv;
 
-layout (binding = 0, std140) uniform SceneUniforms {
-	mat4 view_projection;
-};
+layout(set = 0, binding = 0) uniform SceneUniforms {
+    mat4 view_projection;
+    vec3 camera_position;
+    uint num_spot_lights;
+    uint _pad_align0;
+    uint _pad_align1;
+    uint _pad_align2;
+    vec3 dir_direction;
+    float dir_intensity;
+    vec3 dir_ambient;
+    float _pad_dir0;
+    vec3 dir_diffuse;
+    float _pad_dir1;
+    vec3 dir_specular;
+    float _pad_dir2;
+    vec3 ambient_color;
+} scene;
 
-layout (binding = 1, std140) uniform ModelUniforms {
-	mat4 model;
-	vec3 albedo_color;
-};
+layout(set = 1, binding = 0) uniform ModelUniforms {
+    mat4 model;
+    vec3 albedo_color;
+    float shininess;
+    vec3 specular_color;
+    float _pad0;
+} material;
 
 void main() {
-	vec4 position = model * vec4(v_position, 1.0f);
-	vec4 normal = model * vec4(v_normal, 0.0f);
-
-	gl_Position = view_projection * position;
-
-	f_position = position.xyz;
-	f_normal = normal.xyz;
-	f_uv = v_uv;
+    vec4 world_pos = material.model * vec4(in_position, 1.0);
+    f_position = world_pos.xyz;
+    mat3 normal_matrix = transpose(inverse(mat3(material.model)));
+    f_normal = normalize(normal_matrix * in_normal);
+    f_uv = in_uv;
+    gl_Position = scene.view_projection * world_pos;
 }

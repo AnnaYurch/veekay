@@ -232,6 +232,11 @@ union vec3 {
 		vec3 result = vector;
 
 		float len = length(vector);
+		
+		
+		if (len < 1e-6) {
+			return {0.0f, 0.0f, 0.0f}; 
+		}
 
 		result.x /= len;
 		result.y /= len;
@@ -400,6 +405,31 @@ union mat4 {
 		return result;
 	}
 
+	static mat4 lookAt(const vec3& eye, const vec3& target, const vec3& up) {
+		vec3 z = vec3::normalized(eye - target);
+		vec3 x = vec3::normalized(vec3::cross(up, z));
+		vec3 y = vec3::cross(z, x);
+
+		mat4 result{};
+		result[0][0] = x.x;
+		result[1][0] = x.y;
+		result[2][0] = x.z;
+		result[3][0] = -vec3::dot(x, eye);
+
+		result[0][1] = y.x;
+		result[1][1] = y.y;
+		result[2][1] = y.z;
+		result[3][1] = -vec3::dot(y, eye);
+
+		result[0][2] = z.x;
+		result[1][2] = z.y;
+		result[2][2] = z.z;
+		result[3][2] = -vec3::dot(z, eye);
+
+		result[3][3] = 1.0f;
+		return result;
+	}
+
 	static mat4 transpose(const mat4& matrix) {
 		mat4 result{};
 
@@ -430,4 +460,4 @@ union mat4 {
 	const vec4& operator[](size_t index) const { return columns[index]; }
 };
 
-} // namespace veekay
+}
