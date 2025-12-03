@@ -44,7 +44,6 @@ namespace {
         veekay::mat4 view_projection;
         veekay::vec3 camera_position;
         uint32_t num_spot_lights = 0;
-        uint32_t _pad_align[3];
         DirectionalLight directional_light;
         AmbientLight ambient_light;
     };
@@ -607,7 +606,6 @@ namespace {
             .view_projection = camera.view_projection(aspect_ratio),
             .camera_position = camera.position,
             .num_spot_lights = static_cast<uint32_t>(spot_lights.size()),
-            ._pad_align = {0, 0, 0},
             .directional_light = dir_light,
             .ambient_light = ambient_light
         };

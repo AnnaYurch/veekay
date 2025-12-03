@@ -9,9 +9,7 @@ layout(set = 0, binding = 0) uniform SceneUniforms {
     mat4 view_projection;
     vec3 camera_position;
     uint num_spot_lights;
-    uint _pad_align0;
-    uint _pad_align1;
-    uint _pad_align2;
+
     vec3 dir_direction;
     float dir_intensity;
     vec3 dir_ambient;
