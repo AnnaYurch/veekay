@@ -27,11 +27,20 @@ struct Texture {
 
 	Buffer* staging;
 
+	//annn
 	Texture(VkCommandBuffer cmd,
 	        uint32_t width, uint32_t height,
 	        VkFormat format,
 	        const void* pixels);
+
+	Texture(
+		VkCommandBuffer cmd,
+		uint32_t width, uint32_t height,
+		VkFormat format,
+		const void* pixels,
+		VkImageUsageFlags usage);
 	~Texture();
+	//nnn
 };
 
 } // namespace veekay::graphics

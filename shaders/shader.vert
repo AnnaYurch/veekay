@@ -1,42 +1,63 @@
 #version 450
 
-layout (location = 0) in vec3 in_position;
-layout (location = 1) in vec3 in_normal;
-layout (location = 2) in vec2 in_uv;
+layout (location = 0) in vec3 v_position; // сюда GPU подает позицию одной вершины из буфера
+layout (location = 1) in vec3 v_normal;
+layout (location = 2) in vec2 v_uv; // получаем uv из буфера вершин
 
 layout (location = 0) out vec3 f_position;
 layout (location = 1) out vec3 f_normal;
-layout (location = 2) out vec2 f_uv;
+layout (location = 2) out vec2 f_uv; // объявляем канал для передачи дальше
+layout (location = 3) out vec4 f_pos_light_space;
+layout (location = 4) out vec4 f_pos_spot_light_space[2];
 
-layout(set = 0, binding = 0) uniform SceneUniforms {
+layout (set = 0, binding = 0, std140) uniform SceneUniforms {
     mat4 view_projection;
-    vec3 camera_position;
-    uint num_spot_lights;
+    mat4 light_view_projection; 
+    vec3 camera_pos;
+    float _pad0;
 
-    vec3 dir_direction;
-    float dir_intensity;
-    vec3 dir_ambient;
-    float _pad_dir0;
-    vec3 dir_diffuse;
-    float _pad_dir1;
-    vec3 dir_specular;
-    float _pad_dir2;
     vec3 ambient_color;
-} scene;
+    float _pad1;
+    vec3 ambient_light_intensity;
+    float _pad2;
 
-layout(set = 1, binding = 0) uniform ModelUniforms {
+    vec3 sun_light_direction;
+    float _pad3;
+    vec3 sun_light_color;
+    float _pad4;
+
+    uint _pad6;
+    uint spot_light_count;
+    uint shadow_casting_spot_count;
+    float _pad5;
+    
+    mat4 spot_light_matrices[2];
+};
+
+layout (set = 0, binding = 1, std140) uniform ModelUniforms {
     mat4 model;
     vec3 albedo_color;
-    float shininess;
+    float _pad6;
     vec3 specular_color;
-    float _pad0;
-} material;
+    float _pad7;
+    float shininess;
+} model_ubo;
 
 void main() {
-    vec4 world_pos = material.model * vec4(in_position, 1.0);
-    f_position = world_pos.xyz;
-    mat3 normal_matrix = transpose(inverse(mat3(material.model)));
-    f_normal = normalize(normal_matrix * in_normal);
-    f_uv = in_uv;
-    gl_Position = scene.view_projection * world_pos;
+    vec4 world_position = model_ubo.model * vec4(v_position, 1.0f);
+    vec4 normal = model_ubo.model * vec4(v_normal, 0.0f);
+
+    gl_Position = view_projection * world_position;
+
+    f_position = world_position.xyz;
+    f_normal = normal.xyz;
+    f_uv = v_uv;
+
+    // light_view_projection пришла из C++ (SceneUniforms)
+    // Мы считаем позицию текущей точки с точки зрения света
+    f_pos_light_space = light_view_projection * world_position;
+    
+    for (uint i = 0; i < 2; ++i) {
+        f_pos_spot_light_space[i] = spot_light_matrices[i] * world_position;
+    }
 }

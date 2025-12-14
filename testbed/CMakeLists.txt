@@ -14,14 +14,25 @@ endif()
 
 find_package(Vulkan REQUIRED)
 
+
+
 FetchContent_Declare(
 	lodepng
 	GIT_REPOSITORY https://github.com/lvandeve/lodepng
+
 )
 
-FetchContent_MakeAvailable(lodepng)
+FetchContent_Declare(
+    glfw
+    GIT_REPOSITORY https://github.com/glfw/glfw.git
+    GIT_TAG        3.3.8
+)
 
-target_link_libraries(${PROJECT_NAME} veekay Vulkan::Headers)
+FetchContent_MakeAvailable(lodepng glfw)
+
+
+
+target_link_libraries(${PROJECT_NAME} PRIVATE veekay Vulkan::Headers glfw)
 
 target_sources(${PROJECT_NAME} PRIVATE
 	${lodepng_SOURCE_DIR}/lodepng.cpp
@@ -40,7 +51,6 @@ if(GLSLC_FOUND)
 		set(SHADER_SOURCE ${CMAKE_SOURCE_DIR}/shaders/${SHADER_FILE})
 		set(SHADER_BINARY ${SHADER_FILE}.spv)
 		set(SHADER_BINARY_PATH ${CMAKE_SOURCE_DIR}/shaders/${SHADER_BINARY})
-
 		add_custom_command(
 			OUTPUT ${SHADER_BINARY_PATH}
 			COMMAND glslc ${SHADER_SOURCE} -o ${SHADER_BINARY_PATH}
@@ -51,11 +61,9 @@ if(GLSLC_FOUND)
 		list(APPEND _SHADER_BINARIES ${SHADER_BINARY_PATH})
 	endmacro()
 
-	# To compile shader file, use compile_shader function with a file name
-	# of a shader inside shaders directory. See example below
-
 	compile_shader(shader.vert)
 	compile_shader(shader.frag)
+	compile_shader(shadow.vert)
 
 	add_custom_target(shaders DEPENDS ${_SHADER_BINARIES})
 	add_dependencies(${PROJECT_NAME} shaders)
