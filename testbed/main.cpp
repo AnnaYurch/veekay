@@ -976,6 +976,18 @@ void initialize(VkCommandBuffer cmd) {
         .material = mat_cube3,
     }); 
 
+    spot_lights.push_back(SpotLight{
+        .position = {0.6f, -4.15f, -1.3f},
+        .radius = 12.1f,
+        .direction = {0.0f, 1.0f, 0.0f},
+        .angle = toRadians(35.0f),
+        .color = {1.0f, 1.0f, 1.0f},
+    });
+    spot_light_angles.push_back(SpotLightAngles{
+        .pitch = toRadians(-89.0f),
+        .yaw = toRadians(180.0f),
+    });
+
     for (uint32_t i = 0; i < max_shadow_casting_spots; ++i) {
         insertImageBarrier(cmd, spot_shadow_images[i],
                           0, 0,
@@ -1078,14 +1090,10 @@ void update(double time) {
     ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSize(ImVec2(300, 200), ImGuiCond_FirstUseEver);
     
-    ImGui::Begin("World Environment"); // Новое название окна
-
-    // Статистика (для красоты)
-    ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
-    ImGui::Separator();
+    ImGui::Begin("Window"); 
 
     // Секция Солнца
-    ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.0f, 1.0f), "Sun Settings"); // Желтый заголовок
+    ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.9f, 1.0f), "Sun Settings"); // Желтый заголовок
     ImGui::ColorEdit3("Sun Color##Global", &sun_light_color.x);
     // Чуть замедлим скорость изменения драг-бара (0.01f), чтобы точнее настраивать тень
     ImGui::DragFloat3("Direction##Sun", &sun_light_direction.x, 0.01f, -10.0f, 10.0f);
@@ -1098,110 +1106,55 @@ void update(double time) {
     ImGui::ColorEdit3("Ambient Tint", &ambient_color.x);
     ImGui::DragFloat3("Intensity", &ambient_lights_intensity.x, 0.01f, 0.0f, 5.0f);
 
+    ImGui::Spacing();
+    ImGui::Separator();
+
+    ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.9f, 1.0f), "Spotlights");
+        
+    for (int i = 0; i < (int)spot_lights.size(); ++i) {
+        ImGui::PushID(i + 1000);
+
+        // Убираем CollapsingHeader — сразу показываем параметры без заголовка
+        // Если у тебя изначально был только один прожектор, можно и вовсе убрать цикл, но оставим общий случай
+
+        ImGui::DragFloat3("Pos", &spot_lights[i].position.x, 0.1f);
+        ImGui::ColorEdit3("Color", &spot_lights[i].color.x);
+
+        ImGui::Text("Parameters:");
+        ImGui::DragFloat("Range", &spot_lights[i].radius, 0.1f, 1.0f, 100.0f);
+
+        float angle_deg = spot_lights[i].angle * 180.0f / M_PI;
+        if (ImGui::SliderFloat("Cone Width", &angle_deg, 5.0f, 80.0f)) {
+            spot_lights[i].angle = toRadians(angle_deg);
+        }
+
+        ImGui::Separator();
+        ImGui::Text("Aiming:");
+
+        float pitch_deg = spot_light_angles[i].pitch * 180.0f / M_PI;
+        float yaw_deg = spot_light_angles[i].yaw * 180.0f / M_PI;
+
+        bool changed = false;
+        changed |= ImGui::SliderFloat("Pitch", &pitch_deg, -89.0f, 89.0f);
+        changed |= ImGui::SliderFloat("Yaw", &yaw_deg, -180.0f, 180.0f);
+
+        if (changed) {
+            spot_light_angles[i].pitch = pitch_deg * M_PI / 180.0f;
+            spot_light_angles[i].yaw = yaw_deg * M_PI / 180.0f;
+            spot_lights[i].direction = directionFromAngles(
+                spot_light_angles[i].pitch,
+                spot_light_angles[i].yaw
+            );
+        }
+        ImGui::PopID();
+    }
+
     ImGui::End();
 
 
     // --- ОКНО 2: МЕНЕДЖЕР ИСТОЧНИКОВ СВЕТА ---
     ImGui::SetNextWindowPos(ImVec2(10, 220), ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSize(ImVec2(350, 400), ImGuiCond_FirstUseEver);
-
-    ImGui::Begin("Light Manager");
-
-    if (ImGui::BeginTabBar("LightsTabs")) {
-        // --- ВКЛАДКА: ПРОЖЕКТОРЫ ---
-        if (ImGui::BeginTabItem("Spotlights")) {
-            
-            if (spot_lights.size() < max_spot_lights) {
-                if (ImGui::Button("+ Add Projector", ImVec2(-1, 0))) {
-                    auto view = camera.view();
-                    veekay::vec3 forward{view[0][2], view[1][2], view[2][2]};
-                    
-                    spot_lights.push_back(SpotLight{
-                        .position = camera.position,
-                        .radius = 20.0f,
-                        .direction = veekay::vec3::normalized(-forward), 
-                        .angle = toRadians(35.0f),
-                        .color = {1.0f, 1.0f, 1.0f},
-                    });
-                    
-                    spot_light_angles.push_back(SpotLightAngles{
-                        .pitch = camera.rotation.x,
-                        .yaw = camera.rotation.y
-                    });
-                }
-            } else {
-                ImGui::TextDisabled("Max spotlights reached");
-            }
-
-            ImGui::Separator();
-
-            std::vector<int> lights_to_remove;
-            for (int i = 0; i < (int)spot_lights.size(); ++i) {
-                ImGui::PushID(i + 1000); // Офсет ID, чтобы не конфликтовать с point lights
-                
-                std::string name = "Projector " + std::to_string(i + 1);
-                if (ImGui::CollapsingHeader(name.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
-                    
-                    ImGui::DragFloat3("Pos", &spot_lights[i].position.x, 0.1f);
-                    ImGui::ColorEdit3("Color", &spot_lights[i].color.x);
-                    
-                    ImGui::Text("Parameters:");
-                    ImGui::DragFloat("Range", &spot_lights[i].radius, 0.1f, 1.0f, 100.0f);
-                    
-                    float angle_deg = spot_lights[i].angle * 180.0f / M_PI;
-                    if (ImGui::SliderFloat("Cone Width", &angle_deg, 5.0f, 80.0f)) {
-                        spot_lights[i].angle = toRadians(angle_deg);
-                    }
-
-                    ImGui::Separator();
-                    ImGui::Text("Aiming:");
-                    
-                    // Управление углами
-                    float pitch_deg = spot_light_angles[i].pitch * 180.0f / M_PI;
-                    float yaw_deg = spot_light_angles[i].yaw * 180.0f / M_PI;
-                    
-                    bool changed = false;
-                    changed |= ImGui::SliderFloat("Pitch", &pitch_deg, -89.0f, 89.0f);
-                    changed |= ImGui::SliderFloat("Yaw", &yaw_deg, -180.0f, 180.0f);
-                    
-                    if (changed) {
-                        spot_light_angles[i].pitch = pitch_deg * M_PI / 180.0f;
-                        spot_light_angles[i].yaw = yaw_deg * M_PI / 180.0f;
-                        spot_lights[i].direction = directionFromAngles(
-                            spot_light_angles[i].pitch, 
-                            spot_light_angles[i].yaw
-                        );
-                    }
-
-                    // Кнопки быстрого поворота
-                    if (ImGui::Button("Down")) {
-                        spot_light_angles[i].pitch = -M_PI / 2.0f; spot_light_angles[i].yaw = 0.0f;
-                        spot_lights[i].direction = {0.0f, -1.0f, 0.0f};
-                    }
-                    ImGui::SameLine();
-                    if (ImGui::Button("Up")) {
-                        spot_light_angles[i].pitch = M_PI / 2.0f; spot_light_angles[i].yaw = 0.0f;
-                        spot_lights[i].direction = {0.0f, 1.0f, 0.0f};
-                    }
-
-                    if (ImGui::Button("Delete Projector", ImVec2(-1, 0))) {
-                        lights_to_remove.push_back(i);
-                    }
-                }
-                ImGui::PopID();
-            }
-            
-            for (int j = (int)lights_to_remove.size() - 1; j >= 0; --j) {
-                spot_lights.erase(spot_lights.begin() + lights_to_remove[j]);
-                spot_light_angles.erase(spot_light_angles.begin() + lights_to_remove[j]);
-            }
-
-            ImGui::EndTabItem();
-        }
-
-        ImGui::EndTabBar();
-    }
-    ImGui::End();
 
     if (!ImGui::IsWindowHovered()) {
         using namespace veekay::input;
