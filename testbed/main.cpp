@@ -16,21 +16,6 @@
 #include <imgui.h>
 #include <vulkan/vulkan_core.h>
 
-
-/*
-В этой лабораторной работе вам предстоит реализовать технику наложения теней. 
-Предстоит работа с рендерингом вне кадра “от лица” направленного источника света в текстуру глубины 
-с использованием расширения Vulkan 1.2 Dynamic Rendering, а также работа с использованием данных о 
-глубине сцены, чтобы создать эффект тени на поверхностях моделей.
-
-Реализуйте тени от одного или двух прожекторных или точечных источников света. 
-Поскольку источников света будет больше одного, то стратегия выбора кандидатов должна зависеть от 
-разных факторов: дистанция до камеры, радиус свечения и, для прожекторных, направление свечения.
-
-*/
-
-
-
 namespace {
 
 size_t aligned_sizeof;
@@ -935,7 +920,10 @@ void initialize(VkCommandBuffer cmd) {
         cube_mesh.indices = (uint32_t)idx.size();
     }
 
-    Material* mat_lenna = createMaterialFromFile(cmd, "assets/lenna.png", descriptor_pool);
+    Material* mat_floor = createMaterialFromFile(cmd, "assets/grass.png", descriptor_pool);
+    Material* mat_cube1 = createMaterialFromFile(cmd, "assets/lenna.png", descriptor_pool);
+    Material* mat_cube2 = createMaterialFromFile(cmd, "assets/brick.png", descriptor_pool);
+    Material* mat_cube3 = createMaterialFromFile(cmd, "assets/metal.png", descriptor_pool);
 
     // Если нужно, можно создать просто белый материал (на случай если не хочешь Ленну на полу)
     // Но пока давай натянем Ленну на всё, чтобы проверить работоспособность.
@@ -944,51 +932,48 @@ void initialize(VkCommandBuffer cmd) {
     // СОЗДАНИЕ МОДЕЛЕЙ
     // ---------------------------------------------------------
 
-    // 1. ПОЛ (Plane)
+    // 1. ПОЛ
     models.emplace_back(Model{
         .mesh = plane_mesh,
         .transform = Transform{}, 
         .albedo_color = veekay::vec3{1.0f, 1.0f, 1.0f},
-        .specular_color = veekay::vec3{0.1f, 0.1f, 0.1f}, // Пол не сильно блестит
+        .specular_color = veekay::vec3{0.1f, 0.1f, 0.1f}, 
         .shininess = 8.0f,
-        .material = mat_lenna, // Текстура пола
+        .material = mat_floor, 
     });
 
-    // 2. Левый куб
     models.emplace_back(Model{
         .mesh = cube_mesh,
         .transform = Transform{
-            .position = {-1.0f, -0.5f, -1.5f}, // <--- БЫЛО -1.0f
+            .position = {-1.0f, -0.5f, -1.5f},
             .rotation = {0.0f, 1.0f, 0.0f},
         },
         .albedo_color = veekay::vec3{1.0f, 0.8f, 0.8f}, 
         .specular_color = {1.0f, 1.0f, 1.0f},
         .shininess = 64.0f,
-        .material = mat_lenna,
+        .material = mat_cube1,
     });
 
-    // 3. Правый куб
     models.emplace_back(Model{
         .mesh = cube_mesh,
         .transform = Transform{
-            .position = {1.5f, -0.5f, -0.5f}, // <--- БЫЛО -1.5f
+            .position = {1.5f, -0.5f, -0.5f}, 
         },
         .albedo_color = veekay::vec3{0.8f, 1.0f, 0.8f}, 
         .specular_color = {1.0f, 1.0f, 1.0f},
         .shininess = 128.0f,
-        .material = mat_lenna,
+        .material = mat_cube2,
     });
 
-    // 4. Передний куб
     models.emplace_back(Model{
         .mesh = cube_mesh,
         .transform = Transform{
-            .position = {0.0f, -0.5f, 1.0f}, // <--- БЫЛО -1.5f
+            .position = {0.0f, -0.5f, 1.0f}, 
         },
         .albedo_color = veekay::vec3{0.8f, 0.8f, 1.0f}, 
         .specular_color = {1.0f, 1.0f, 1.0f},
         .shininess = 32.0f,
-        .material = mat_lenna,
+        .material = mat_cube3,
     }); 
 
     for (uint32_t i = 0; i < max_shadow_casting_spots; ++i) {
@@ -1080,14 +1065,11 @@ void shutdown() {
 void update(double time) {
 
     if (models.size() >= 4) {
-        // Левый куб: крутится вокруг Y
-        models[1].transform.rotation.y = (float)time * 0.5f; 
-        
-        // Правый куб: крутится восьмеркой
+        models[1].transform.rotation = {0.0f, 0.0f, 0.0f};
+
         models[2].transform.rotation.x = (float)time * 0.3f;
         models[2].transform.rotation.z = (float)time * 0.2f;
 
-        // Передний куб: подпрыгивает
         models[3].transform.position.y = -0.5f + sinf((float)time * 2.0f) * 0.2f;
         models[3].transform.rotation.y = -(float)time;
     }
