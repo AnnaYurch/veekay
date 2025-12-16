@@ -979,7 +979,7 @@ void initialize(VkCommandBuffer cmd) {
     spot_lights.push_back(SpotLight{
         .position = {0.6f, -4.15f, -1.3f},
         .radius = 12.1f,
-        .direction = {0.0f, 1.0f, 0.0f},
+        .direction = directionFromAngles(toRadians(-89.0f), toRadians(180.0f)),
         .angle = toRadians(35.0f),
         .color = {1.0f, 1.0f, 1.0f},
     });
@@ -1080,7 +1080,7 @@ void update(double time) {
         models[1].transform.rotation = {0.0f, 0.0f, 0.0f};
 
         models[2].transform.rotation.x = (float)time * 0.3f;
-        models[2].transform.rotation.z = (float)time * 0.2f;
+        //models[2].transform.rotation.z = (float)time * 0.2f;
 
         models[3].transform.position.y = -0.5f + sinf((float)time * 2.0f) * 0.2f;
         models[3].transform.rotation.y = -(float)time;
@@ -1093,8 +1093,8 @@ void update(double time) {
     ImGui::Begin("Window"); 
 
     // Секция Солнца
-    ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.9f, 1.0f), "Sun Settings"); // Желтый заголовок
-    ImGui::ColorEdit3("Sun Color##Global", &sun_light_color.x);
+    ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.9f, 1.0f), "Directional Light");
+    ImGui::ColorEdit3("Color##Global", &sun_light_color.x);
     // Чуть замедлим скорость изменения драг-бара (0.01f), чтобы точнее настраивать тень
     ImGui::DragFloat3("Direction##Sun", &sun_light_direction.x, 0.01f, -10.0f, 10.0f);
 
@@ -1102,9 +1102,8 @@ void update(double time) {
     ImGui::Separator();
 
     // Секция Фона
-    ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.9f, 1.0f), "Global Illumination"); // Голубоватый заголовок
-    ImGui::ColorEdit3("Ambient Tint", &ambient_color.x);
-    ImGui::DragFloat3("Intensity", &ambient_lights_intensity.x, 0.01f, 0.0f, 5.0f);
+    ImGui::TextColored(ImVec4(0.7f, 0.7f, 0.9f, 1.0f), "Ambient Light"); 
+    ImGui::ColorEdit3("Color", &ambient_lights_intensity.x);
 
     ImGui::Spacing();
     ImGui::Separator();
@@ -1120,16 +1119,12 @@ void update(double time) {
         ImGui::DragFloat3("Pos", &spot_lights[i].position.x, 0.1f);
         ImGui::ColorEdit3("Color", &spot_lights[i].color.x);
 
-        ImGui::Text("Parameters:");
-        ImGui::DragFloat("Range", &spot_lights[i].radius, 0.1f, 1.0f, 100.0f);
+        ImGui::DragFloat("Distance", &spot_lights[i].radius, 0.1f, 1.0f, 100.0f);
 
         float angle_deg = spot_lights[i].angle * 180.0f / M_PI;
-        if (ImGui::SliderFloat("Cone Width", &angle_deg, 5.0f, 80.0f)) {
+        if (ImGui::SliderFloat("Beam Angle", &angle_deg, 5.0f, 80.0f)) {
             spot_lights[i].angle = toRadians(angle_deg);
         }
-
-        ImGui::Separator();
-        ImGui::Text("Aiming:");
 
         float pitch_deg = spot_light_angles[i].pitch * 180.0f / M_PI;
         float yaw_deg = spot_light_angles[i].yaw * 180.0f / M_PI;
@@ -1151,8 +1146,6 @@ void update(double time) {
 
     ImGui::End();
 
-
-    // --- ОКНО 2: МЕНЕДЖЕР ИСТОЧНИКОВ СВЕТА ---
     ImGui::SetNextWindowPos(ImVec2(10, 220), ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSize(ImVec2(350, 400), ImGuiCond_FirstUseEver);
 
@@ -1200,15 +1193,14 @@ void update(double time) {
     veekay::vec3 light_dir = veekay::vec3::normalized(sun_light_direction);
     veekay::vec3 light_pos = -light_dir * 20.0f;
 
-    // матрица вида (смотрим с позиции света в центр)
+    // матрица вида от лица света 
     veekay::mat4 light_view = look_at_matrix(light_pos, {0, 0, 0}, {0, 1, 0});
     
     float ortho_size = 50.0f;
     float z_near = 1.0f;
     float z_far = 50.0f;
 
-    // матрица проекции - ортогональная "коробка" 50 на 50
-    // ось Y вниз, так как вулкан
+    // матрица проекции направленного источника света
     veekay::mat4 light_proj = orthographic_matrix(-ortho_size, ortho_size, -ortho_size, ortho_size, z_near, z_far);
 
     // итоговая матрица света

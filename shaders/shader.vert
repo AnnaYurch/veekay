@@ -1,12 +1,12 @@
 #version 450
 
-layout (location = 0) in vec3 v_position; // сюда GPU подает позицию одной вершины из буфера
+layout (location = 0) in vec3 v_position; 
 layout (location = 1) in vec3 v_normal;
-layout (location = 2) in vec2 v_uv; // получаем uv из буфера вершин
+layout (location = 2) in vec2 v_uv;
 
 layout (location = 0) out vec3 f_position;
 layout (location = 1) out vec3 f_normal;
-layout (location = 2) out vec2 f_uv; // объявляем канал для передачи дальше
+layout (location = 2) out vec2 f_uv;
 layout (location = 3) out vec4 f_pos_light_space;
 layout (location = 4) out vec4 f_pos_spot_light_space[2];
 
@@ -53,11 +53,8 @@ void main() {
     f_normal = normal.xyz;
     f_uv = v_uv;
 
-    // light_view_projection пришла из C++ (SceneUniforms)
-    // Мы считаем позицию текущей точки с точки зрения света
     f_pos_light_space = light_view_projection * world_position;
     
-    for (uint i = 0; i < 2; ++i) {
-        f_pos_spot_light_space[i] = spot_light_matrices[i] * world_position;
-    }
+    f_pos_spot_light_space[0] = spot_light_matrices[0] * world_position;
+    f_pos_spot_light_space[1] = vec4(0.0);
 }

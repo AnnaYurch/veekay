@@ -8,9 +8,5 @@ layout(push_constant) uniform Constants {
 } push;
 
 void main() {
-    // Мы берем позицию вершины (inPosition)
-    // Умножаем на матрицу модели (ставим в мир)
-    // Умножаем на матрицу света (lightViewProj)
-    // И записываем результат в gl_Position
     gl_Position = push.lightViewProj * push.model * vec4(inPosition, 1.0);
 }
