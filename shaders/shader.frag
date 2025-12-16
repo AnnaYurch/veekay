@@ -59,6 +59,7 @@ layout (set = 1, binding = 0) uniform sampler2D texSampler;
 layout (set = 2, binding = 0) uniform sampler2DShadow shadowMap; //тень от солнца
 
 layout (set = 2, binding = 1) uniform sampler2DShadow spotShadowMap0; //тени от прожекторов
+
 layout (set = 2, binding = 2) uniform sampler2DShadow spotShadowMap1;
 
 float calculateShadow(vec4 lightSpacePos, vec3 normal, vec3 lightDir, sampler2DShadow shadowSampler) {
