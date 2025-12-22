@@ -22,7 +22,7 @@ size_t aligned_sizeof;
 
 constexpr uint32_t max_models = 1024;
 constexpr uint32_t max_spot_lights = 8;
-constexpr uint32_t shadow_map_size = 2048;
+constexpr uint32_t shadow_map_size = 4096;
 constexpr uint32_t max_shadow_casting_spots = 2;
 
 struct Material {
